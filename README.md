@@ -180,33 +180,78 @@ df_sale = search_idealista_sale(
 ```
 </details> 
 
-## 2.1 Geocode every town (lat/lon)
+## 2.2 Geocode every town (lat/lon)
+The main Kaggle housing dataset only included town names, not geographic coordinates.  
+To calculate realistic commute times and model routes through the public transportation system, we needed the latitude and longitude of every town.  
+
+We used the  `geopy` library to convert each town name into coordinates, then cached the results to avoid repeated API calls.
+
+
+<details>
+<summary>📍 Show Geocoding Code</summary>
 
 ```python
-# Geocode 187 town names → lat/lon
+# Install dependencies as I was running it on Google Collab 
+!pip -q install geopy tqdm unidecode
+
 import os, pandas as pd
-from geopy.geocoders import Nominatim
-from geopy.extra.rate_limiter import RateLimiter
-from unidecode import unidecode
+from geopy.geocoders import Nominatim # geocoding library
+from geopy.extra.rate_limiter import RateLimiter # ensures that we dont get banned from making too many requests
+from unidecode import unidecode # remove accents from names
 from tqdm import tqdm
 
-tqdm.pandas()
+# File to cache results
+CACHE_PATH = "geocode_towns_cache.csv"
 
-# df_towns must have a column: 'town_name'
-# e.g., df_towns = pd.DataFrame({'town_name': ['Queluz', 'Setúbal', ...]})
+# Start from cache if it exists, otherwise create new
+if os.path.exists(CACHE_PATH):
+    cache = pd.read_csv(CACHE_PATH)
+else:
+    cache = pd.DataFrame({"Town": towns_df["Town"], "lat": None, "lon": None})
 
-geolocator = Nominatim(user_agent="lisbon-housing-transport")
-geocode = RateLimiter(geolocator.geocode, min_delay_seconds=1, max_retries=2, error_wait_seconds=2.0)
+# Configuring the Geocoder 
+geolocator = Nominatim(user_agent="lisbon-housing-transport/1.0 (student project)")
+geocode = RateLimiter(
+    geolocator.geocode,
+    min_delay_seconds=1.2,   # avoid getting blocked
+    max_retries=2,
+    swallow_exceptions=True
+)
+# Defining the geocoding logic and tries 3 different approaches
+def geocode_town(town: str):
+    # 1) Plain string with country filter
+    loc = geocode(f"{town}, Portugal", country_codes="pt", language="pt")
+    if loc:
+        return loc.latitude, loc.longitude
 
-def geocode_town(name: str):
-    q = f"{unidecode(name)}, Portugal"
-    loc = geocode(q)
-    if not loc:
-        return pd.Series([None, None])
-    return pd.Series([loc.latitude, loc.longitude])
+    # 2) Structured query
+    loc = geocode({"city": town, "country": "Portugal"}, language="pt")
+    if loc:
+        return loc.latitude, loc.longitude
 
-df_towns[['lat', 'lon']] = df_towns['town_name'].progress_apply(geocode_town)
-# Keep only rows with coordinates
-df_towns = df_towns.dropna(subset=['lat','lon']).reset_index(drop=True)
+    # 3) Try without accents
+    t2 = unidecode(town)
+    if t2 != town:
+        loc = geocode(f"{t2}, Portugal", country_codes="pt", language="pt")
+        if loc:
+            return loc.latitude, loc.longitude
+
+    return None, None
+
+# Only geocode missing ones
+mask = cache["lat"].isna() | cache["lon"].isna()
+to_do = cache.loc[mask, "Town"].tolist()
+
+# Run with progress bar
+for town in tqdm(to_do, desc="Geocoding towns"):
+    lat, lon = geocode_town(town)
+    cache.loc[cache["Town"] == town, ["lat", "lon"]] = [lat, lon]
+
+# Save/refresh cache
+cache.to_csv(CACHE_PATH, index=False)
+print("Cache saved:", CACHE_PATH)
+print("Geocoded:", cache['lat'].notna().sum(), "/", len(cache))
+```
+</details> 
 
 
