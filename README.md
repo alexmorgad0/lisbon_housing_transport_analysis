@@ -753,3 +753,180 @@ df_out = df.merge(town_routes[["Town","travel_min","arrive_time"]], on="Town", h
 
 ```
 </details> 
+
+## 2.5 Travel Times with the Google Maps API
+
+Because some towns were missing coverage in my GTFS data feed, which I couldn’t locate online the remaining datasets I decided to use the Google Maps Directions API and Distance Matrix API to estimate travel times from the remaining 184 towns.
+
+This allowed me to complete the dataset by:
+- Getting transit routes (duration, arrival time, route steps, map points)
+- Getting driving times and distances for comparison between the different Towns.
+
+<details>
+<summary>Show code</summary>
+
+```python
+# --- CONFIG ---
+GOOGLE_API_KEY = "YOUR_API_KEY"          # For privacy reasons I occulted my API key
+CENTER = (38.7253, -9.1500)               # Marquês de Pombal
+towns_demo = ["Penha de França", "Massamá e Monte Abraão", "Barreiro e Lavradio"]
+
+# Ensure data has the required columns
+assert {"Town","lat","lon"} <= set(_base.columns)
+
+# Get unique remaining towns (exclude the 3 demo towns)
+other_towns = (
+    _base.loc[~_base["Town"].isin(towns_demo), ["Town","lat","lon"]]
+         .dropna()
+         .groupby("Town", as_index=False)[["lat","lon"]]
+         .median()
+)
+
+# --- Google Maps client ---
+!pip -q install googlemaps
+import googlemaps, pandas as pd, time
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
+
+gmaps = googlemaps.Client(key=GOOGLE_API_KEY)
+
+# Makes sure we get our data at 8AM on the next weekday
+def next_weekday_at(hour=8, minute=0, tz="Europe/Lisbon"):
+    now = datetime.now(ZoneInfo(tz))
+    target = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+    while target <= now or target.weekday() >= 5:  # skip weekends
+        target = (target + timedelta(days=1)).replace(hour=hour, minute=minute)
+    return target
+
+DEPART_AT = next_weekday_at(8, 0, "Europe/Lisbon")
+
+# --- Format helpers ---
+def sec_to_hhmm(s:int) -> str:
+    s = int(s); h = s//3600; m = (s%3600)//60
+    return f"{h:02d}:{m:02d}"
+
+def _fmt_epoch_hhmm(x):
+    try: return datetime.fromtimestamp(int(x)).strftime("%H:%M")
+    except: return None
+
+# --- Format route steps into readable text
+def build_route_text(steps):
+    parts = []
+    for st in steps:
+        mode = (st.get("travel_mode") or "").upper()
+        if mode == "TRANSIT":
+            td = st.get("transit_details") or {}
+            dep = (td.get("departure_stop") or {}).get("name","?")
+            arr = (td.get("arrival_stop") or {}).get("name","?")
+            line = (td.get("line") or {}).get("short_name") or (td.get("line") or {}).get("name") or "Transit"
+            dep_t = _fmt_epoch_hhmm((td.get("departure_time") or {}).get("value"))
+            arr_t = _fmt_epoch_hhmm((td.get("arrival_time") or {}).get("value"))
+            parts.append(f"TRANSIT({line}): {dep}→{arr} {dep_t}-{arr_t}")
+        elif mode == "WALKING":
+            dur_s = (st.get("duration") or {}).get("value", 0)
+            dist_m = (st.get("distance") or {}).get("value", 0)
+            parts.append(f"WALK: {sec_to_hhmm(dur_s)} (~{int(dist_m)} m)")
+        else:
+            dur_s = (st.get("duration") or {}).get("value", 0)
+            dist_m = (st.get("distance") or {}).get("value", 0)
+            parts.append(f"{mode or 'STEP'}: {sec_to_hhmm(dur_s)} (~{int(dist_m)} m)")
+    return " | ".join(parts)
+
+# Decodes the geometry polyline of each step into (lat, lon) points
+def step_points_with_type(step):
+    from googlemaps.convert import decode_polyline
+    pts = []
+    mode = (step.get("travel_mode") or "").upper()
+    seg = "ride" if mode == "TRANSIT" else ("walk" if mode == "WALKING" else mode.lower() or "other")
+    poly = (step.get("polyline") or {}).get("points")
+    if poly:
+        for p in decode_polyline(poly):
+            pts.append((p["lat"], p["lng"], seg))
+    else:
+        end = step.get("end_location")
+        if end:
+            pts.append((end["lat"], end["lng"], seg))
+    return pts
+
+#  Call Google Directions API and extracts Travel duration in minutes, arrive time, route text and points (sequence of the coordinates)
+def google_route_for_town(lat: float, lon: float):
+    resp = gmaps.directions(
+        origin=(float(lat), float(lon)),
+        destination=CENTER,
+        mode="transit",
+        departure_time=DEPART_AT
+    )
+    if not resp:
+        return None
+
+    leg = resp[0]["legs"][0]
+    travel_min = round(leg["duration"]["value"] / 60, 1)
+    arrive_time = (leg.get("arrival_time") or {}).get("text")
+    if not arrive_time:
+        dep_epoch = (leg.get("departure_time") or {}).get("value")
+        if dep_epoch:
+            arrive_time = _fmt_epoch_hhmm(int(dep_epoch) + int(leg["duration"]["value"]))
+
+    rtext = build_route_text(leg.get("steps", []))
+
+    seq = 0
+    pts = [(float(lat), float(lon), "origin", seq)]; seq += 1
+    for st in leg.get("steps", []):
+        for plat, plon, seg in step_points_with_type(st):
+            pts.append((plat, plon, seg, seq)); seq += 1
+    pts.append((CENTER[0], CENTER[1], "destination", seq))
+
+    return {"travel_min": travel_min, "arrive_time": arrive_time, "route_text": rtext, "points": pts}
+
+# --- Loops trough all the remaining 184 towns 
+rows = []; all_points = []
+for _, r in other_towns.iterrows():
+    out = google_route_for_town(r["lat"], r["lon"])
+    time.sleep(0.15)
+    if not out:
+        rows.append({"Town": r["Town"], "travel_min_google": None, "arrive_time_google": None, "route_text_google": "no route"})
+        continue
+    rows.append({
+        "Town": r["Town"],
+        "travel_min_google": out["travel_min"],
+        "arrive_time_google": out["arrive_time"],
+        "route_text_google": out["route_text"]
+    })
+    all_points += [(r["Town"], seq, lat, lon, seg) for (lat, lon, seg, seq) in out["points"]]
+# builds two final data frames
+google_summary = pd.DataFrame(rows)
+google_points  = pd.DataFrame(all_points, columns=["Town","PathOrder","lat","lon","segment_type"])
+
+#  Loops through towns to get driving minutes and distance in km to city center
+drive_rows = []
+for _, r in other_towns.iterrows():
+    try:
+        dm = gmaps.distance_matrix(
+            origins=[(float(r["lat"]), float(r["lon"]))],
+            destinations=[CENTER],
+            mode="driving",
+            departure_time=DEPART_AT
+        )
+        el = dm["rows"][0]["elements"][0]
+        if el.get("status") == "OK":
+            dist_m = el["distance"]["value"]
+            dur_s = el.get("duration_in_traffic", el["duration"])["value"]
+            drive_rows.append({
+                "Town": r["Town"],
+                "drive_min": round(dur_s / 60, 1),
+                "drive_km": round(dist_m / 1000, 1)
+            })
+        else:
+            drive_rows.append({"Town": r["Town"], "drive_min": None, "drive_km": None})
+    except:
+        drive_rows.append({"Town": r["Town"], "drive_min": None, "drive_km": None})
+    time.sleep(0.1)
+# saves the driving time and distance from each town to city center
+driving_df = pd.DataFrame(drive_rows)
+
+
+
+```
+</details> 
+
+
