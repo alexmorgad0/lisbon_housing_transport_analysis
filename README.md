@@ -929,4 +929,172 @@ driving_df = pd.DataFrame(drive_rows)
 ```
 </details> 
 
+## 3. Housing Price Prediction Model
+
+To estimate property prices, I trained a supervised regression model using the housing and accessibility features collected.  
+I first tested a simple Linear Regression, but its performance was very poor (R² ≈ 0.17, RMSE ≈ €2,328/m²).  
+
+I then trained a Random Forest Regressor, which performed much better, explaining about 75% of the variance (R² ≈ 0.75) with an error of €1,300/m².  
+This error is still large and only suitable for showing broad trends — not individual property valuations.
+
+> Disclaimer: 
+> This model should **not be used to predict real house prices**.  
+> Even though the Random Forest explains about 75% of the variance, it still has a large error (~€1,300/m²).  
+> This is likely due to the dataset being very noisy and incomplete, for example, the sample from the Idealista API was very small and most of the data came from the Kaggle Dataset.
+
+
+---
+
+### 🧪 Attempt 1 — Linear Regression 
+R² ≈ 0.17 , RMSE ≈ €2,328/m²
+
+<details>
+<summary>📉 Show code</summary>
+
+```python
+import numpy as np, pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error, r2_score
+
+# --- Features & target
+features = [
+    "District","Town","Type",
+    "TotalArea","TotalRooms","NumberOfBathrooms","Parking","Elevator",
+    "travel_min_final","drive_min_final","drive_km_final","no_transit_route"
+]
+target = "price_per_m2" # we are predicting the price per m2
+
+X = df[features].copy()
+y = df[target].copy()
+
+# Splits the features into categorical and numerical columns and wraps these two pipelines into a ColumnTransformer so preprocessing happens automatically for the right columns
+cat_cols = ["District","Town","Type"]
+num_cols = [c for c in features if c not in cat_cols]
+
+preprocessor = ColumnTransformer([
+    ("cat", Pipeline([
+        ("imp", SimpleImputer(strategy="most_frequent")),
+        ("ohe", OneHotEncoder(handle_unknown="ignore"))
+    ]), cat_cols),
+    ("num", Pipeline([
+        ("imp", SimpleImputer(strategy="median"))
+    ]), num_cols)
+])
+
+# --- Train/test split Ramdomly splits the dataset into a sample of 20% for test size and 80% train size
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Trains the full pipeline on the training data
+linreg_pipe = Pipeline([
+    ("prep", preprocessor),
+    ("reg", LinearRegression())
+])
+
+linreg_pipe.fit(X_train, y_train)
+
+# Evaluates the model and computes Root Mean Squared Error , wich is the average error in m2 and R2 wich is how much the variance is explained
+y_pred = linreg_pipe.predict(X_test)
+rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+r2 = r2_score(y_test, y_pred)
+print(f"RMSE: {rmse:.2f}")
+print(f"R²:   {r2:.3f}")
+
+
+```
+</details> 
+
+## Attempt 2 - Random Forest Regressor
+R² ≈ 0.75 , RMSE ≈ €1299/m²
+<details>
+<summary>🌲 Show code</summary>
+
+```python
+import numpy as np
+import pandas as pd
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_squared_error, r2_score
+
+# --- Features & target ---
+features = [
+    "Town","Type",
+    "TotalArea","TotalRooms","NumberOfBathrooms","Parking","Elevator",
+    "travel_min_final","drive_min_final","drive_km_final","no_transit_route"
+]
+target = "price_per_m2"
+
+X = df[features].copy()
+y = df[target].copy()
+
+# --- Preprocessor ---
+cat_cols = ["Town","Type"]
+num_cols = [c for c in features if c not in cat_cols]
+
+preprocessor = ColumnTransformer([
+    ("cat", Pipeline([
+        ("imp", SimpleImputer(strategy="most_frequent")),
+        ("ohe", OneHotEncoder(handle_unknown="ignore", sparse_output=False))
+    ]), cat_cols),
+    ("num", Pipeline([
+        ("imp", SimpleImputer(strategy="median"))
+    ]), num_cols),
+])
+
+# --- Train/test split ---
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+# --- Random Forest model ---
+rf = RandomForestRegressor(
+    n_estimators=600,
+    min_samples_leaf=2,
+    max_features="sqrt",
+    n_jobs=-1,
+    random_state=42
+)
+
+# --- Full pipeline ---
+rf_pipe = Pipeline([
+    ("prep", preprocessor),
+    ("reg", rf)
+])
+
+# --- Train ---
+rf_pipe.fit(X_train, y_train)
+
+# --- Evaluate ---
+y_pred = rf_pipe.predict(X_test)
+rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+r2 = r2_score(y_test, y_pred)
+
+print(f"RF RMSE: {rmse:.2f}")
+print(f"RF R²:   {r2:.3f}")
+
+```
+</details> 
+
+## 3.1 Streamlit App
+
+I built a separate [Streamlit](https://housing-price-app-gskomybxcbtkgxrfk5wpza.streamlit.app/) app to make the prediction model accessible in a user-friendly interface.
+
+Instead of running code notebooks, this app lets users:
+
+- Select a town, property type, area, rooms, and other features
+- Instantly get the predicted price per m² from the trained model
+- View the model’s estimated price in a clean and interactive UI
+
+This makes it easy to explore the model’s output without needing any coding experience.
+
+🔗 **App Repository:** [link-to-streamlit-repo](https://github.com/alexmorgad0/housing-price-app)
 
