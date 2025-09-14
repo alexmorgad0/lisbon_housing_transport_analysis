@@ -1,24 +1,22 @@
 #  Lisbon Housing & Transportation Analysis
 
-Welcome to my analysis of housing affordability and transportation accessibility across the **Lisbon metropolitan area**.
+This project explores how **housing affordability** and **transportation accessibility** interact across the Lisbon metropolitan area.  
+It aims to understand whether people could live further from the city center in **more affordable areas** if **commute times were improved** through better public transport coverage.
 
-This project was created to explore where people can live more affordably while still maintaining good access to the city center. It combines housing prices, commute times, and transport network coverage into a single analysis.
+I used a [Kaggle](https://www.kaggle.com/datasets/luvathoms/portugal-real-estate-2024/data) dataset of 40k+ property listings and enriched it with 200 additional live listings from the [Idealista](https://www.idealista.pt) API.  
 
-The core data came from a [Kaggle](https://www.kaggle.com/datasets/luvathoms/portugal-real-estate-2024/data) dataset of property listings, enriched with live data collected via the [Idealista](https://www.idealista.pt) API. Transportation data came from multiple [GTFS](https://gtfs.org) feeds, complemented by travel times fetched from the [Google Maps](https://developers.google.com/maps) APIs.
+Transportation data came from multiple [GTFS](https://gtfs.org) feeds covering trains, metro, ferries, trams, and buses — which together contained **over 2 million rows of raw timetable data** that I cleaned, standardized, and merged into a unified transport network.  
 
-> **Disclaimer:** This project was created for educational purposes only.
+Because some feeds were missing (notably from [Carris](https://www.carris.pt)), I also used the [Google Maps](https://developers.google.com/maps) API to estimate travel times for the remaining towns.
 
+This project includes:
+-  A custom GTFS-based routing model to simulate public transport commutes  
+-  Public transport vs car travel times from 187 towns to Marquês de Pombal  
+-  A machine learning model to estimate housing prices (trend-level)  
+-  Dashboard in Power BI
+-  A [Streamlit](https://housing-price-app-gskomybxcbtkgxrfk5wpza.streamlit.app/) web app for user-friendly price predictions
 
----
-
-#  The Questions
-
-This project set out to answer:
-
-1. Which towns around Lisbon offer the lowest housing prices per m²?
-2. How well connected are these towns to the city center by public transport?
-3. Which areas offer the best balance of affordability and accessibility?
-4. Can I build a model to estimate housing prices across the region?
+> **Disclaimer:** This project was created for **educational purposes only** and is not suitable for real-world pricing or planning decisions.
 
 
 ---
@@ -30,7 +28,7 @@ This project set out to answer:
   - `matplotlib` — visualizations
   - `geopy` — get town coordinates
   - `googlemaps` — route requests
-  - `scikit-learn` —  Random Forest model for housing price prediction  
+  - `scikit-learn` —  Linear Regression and Random Forest model for housing price prediction  
   - `requests` — make API calls ([Google](https://developers.google.com/maps), [Idealista](https://www.idealista.pt))
 - **Power BI** — Dashboards for price vs accessibility analysis
 - **[Streamlit](https://streamlit.io)** — Interactive web app to explore my Prediction Model
@@ -945,7 +943,7 @@ This error is still large and only suitable for showing broad trends — not ind
 
 ---
 
-###  Attempt 1 — Linear Regression 
+##  Attempt 1 — Linear Regression 
 R² ≈ 0.17 , RMSE ≈ €2,328/m²
 
 <details>
@@ -1215,6 +1213,47 @@ RETURN DIVIDE(t_capped - 0, 120 - 0)
 ![Town Explorer Page](images/town_explorer.png)
 
 ---
+
+---
+
+##  What I Learned
+Throughout this project, I gained experience combining housing market data with public transportation accessibility to support data-driven urban analysis. Key learnings included:
+
+- **Geospatial data handling** — Geocoding hundreds of towns, merging coordinates, and aligning them with transport and price data.
+- **APIs & automation** — Using multiple APIs (Idealista, Google Maps, Nominatim) and implementing caching to avoid rate limits.
+- **GTFS route modeling** — Building a custom routing engine using GTFS timetables and spatial nearest-stop matching.
+- **Machine learning workflow** — Training and evaluating a Random Forest model to estimate price per m², including preprocessing pipelines.
+- **Visualization & storytelling** — Creating clear, interactive dashboards in Power BI and a prediction app in Streamlit.
+
+---
+
+##  Challenges I Faced
+- **Data availability gaps** — Public GTFS data was incomplete, even tough I had 7 different transportation methods, forcing me to limit my route model to only 3 towns.
+- **Data noise and outliers** — Property data contained many inconsistencies that heavily affected model accuracy.
+- **Complex pipeline** — Merging heterogeneous datasets (housing, geospatial, and transport) required constant cleaning and schema alignment.
+- **Performance tuning** — Finding the right features and model parameters took multiple iterations to avoid underfitting or overfitting.
+
+---
+
+##  Limitations
+- The main Kaggle dataset had many inconsistencies and required heavy cleaning.  
+- Only 200 listings were collected from the Idealista API, which is too small for reliable modeling.  
+- Not all GTFS feeds were available, so my custom public transport model could only be applied to 3 towns.  
+- Listings only had the coordinates of each town's center,this creates large inaccuracies for big towns like Cascais or Estoril, where travel times can vary a lot inside the same town.  
+- The data was overall very noisy and not suitable for accurate price prediction.  
+- This project is **for educational purposes only** and should not be used to make real-world housing decisions.
+
+---
+
+## Conclusion
+This project shows that combining housing and transport data can reveal areas that are both more affordable and reasonably well connected to Lisbon’s city center.
+
+It demonstrates the full data pipeline — from **data collection and cleaning, to geocoding, GTFS route modeling, machine learning, and visualization** — and provides a clear framework to build on.
+
+In the future, with more complete and accurate datasets, this work could help answer a key question:  
+> **Does Lisbon have a housing problem or a transportation problem?**  
+
+If better public transport allowed people to live further away in cheaper areas while keeping commute times reasonable, it could significantly reduce housing pressure in central Lisbon. This project is a **first foundation** to explore that question when full data becomes available.
 
 
 
