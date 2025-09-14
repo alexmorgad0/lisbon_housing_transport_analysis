@@ -23,7 +23,7 @@ This project set out to answer:
 
 ---
 
-# 🛠 Tools I Used
+#  Tools I Used
 
 - **Python** ([Google Colab](https://colab.research.google.com))
   - `pandas`, `numpy` — data manipulation  
@@ -72,7 +72,7 @@ The goal was to:
 
 Due to API restrictions, only about 200 listings were collected.
 
-> ⚠️ **Note:** Idealista’s API is partner-only. You need your own `CLIENT_ID` and `CLIENT_SECRET`.  
+> **Note:** Idealista’s API is partner-only. You need your own `CLIENT_ID` and `CLIENT_SECRET`.  
 > I only captured ~200 listings due to access/rate limits.
 
 
@@ -189,7 +189,7 @@ I used the  `geopy` library to convert each town name into coordinates, then cac
 
 
 <details>
-<summary>📍 Show Geocoding Code</summary>
+<summary> Show Geocoding Code</summary>
 
 ```python
 # Install dependencies as I was running it on Google Collab 
@@ -945,11 +945,11 @@ This error is still large and only suitable for showing broad trends — not ind
 
 ---
 
-### 🧪 Attempt 1 — Linear Regression 
+###  Attempt 1 — Linear Regression 
 R² ≈ 0.17 , RMSE ≈ €2,328/m²
 
 <details>
-<summary>📉 Show code</summary>
+<summary>Show code</summary>
 
 ```python
 import numpy as np, pandas as pd
@@ -1011,7 +1011,7 @@ print(f"R²:   {r2:.3f}")
 ## Attempt 2 - Random Forest Regressor
 R² ≈ 0.75 , RMSE ≈ €1299/m²
 <details>
-<summary>🌲 Show code</summary>
+<summary> Show code</summary>
 
 ```python
 import numpy as np
@@ -1113,36 +1113,94 @@ The dashboard lets users visually explore:
 
 This dashboard helps compare affordability vs connectivity and discover which towns offer better value for commuters.
 
+If you want to know more here is the link for the dasboard. [Download Power BI Dashboard (.pbix)](housing_project_final.pbix) . Click on View Raw for download.
+
 ---
 
 ### Dashboard Pages
 
-#### Overview
-- Summary of all listings  
-- Average price per m², average travel times (car vs public transport), average distance to city center  
-- Bubble map of all towns  
-- Scatter plot: price vs distance  
+####  Overview
+
+- Summary view of all listings across the Lisbon & Setúbal region  
+- KPIs:  
+  - Average price per m²  
+  - Average travel time to city center (by public transport & by car)  
+  - Average distance to city center  
+- Bubble map showing average price per m² by town (bubble size = price level)
+- Scatter plot of price per m² vs distance from city center
+- Filter slicers for district, property type, and public transport accessibility
+
+
 
 ![Overview Page](images/overview.png)
 
+**Key Insights**
+- Housing prices drop noticeably as distance from the city center increases.
+- Several outliers exist — towns far from the center with unexpectedly high prices.
+- Average public transport time (~60 min) is more than double the average car time (~27 min).
+- Most listings cluster within 20–40 km of the city center.
 ---
 
-#### **Market Structure**
-- Property type distribution (apartments, houses, land)  
-- Average property sizes by distance  
-- Price per m² by type across distance bands  
-- Share of listings per distance band
+#### Market Structure
+- Property type distribution (apartments, houses, land)
+- Average property sizes by distance from the city center
+- Average price per m² by property type and distance bands
+- Distribution of property types across distance bands
+- Percentage of listings by type (apartments, houses, land)
 
 ![Market Structure Page](images/market_structure.png)
 
+**Key Insights**
+- Apartments dominate the market (≈62% of all listings), while houses are ~26% and land only ~6%.
+- Property sizes increase with distance, homes further from the city center are larger on average.
+- Apartments are consistently more expensive per m² than houses or land, especially close to the city.
+
 ---
 
-#### **Accessibility vs Price Analysis**
-- Price vs travel time by public transport  
-- Combined view of price and travel time by distance bands  
-- Top 10 best-value towns (≤60 min to center)
+#### Accessibility vs Price Analysis
+- Price vs travel time to city center by public transport (each point = one town)
+- Combined view of average price per m² and average travel time by distance band
+- Ranked list of the Top 10 best-value towns (≤60 min to city center by public transport)
+
+#### How I Chose the Top-10 Best-Value Towns
+
+I ranked towns by a Value Score that balances price per m² and public-transport time to the city center.  
+Both metrics are normalized to 0–1 (lower is better), then combined with equal weights:
+
+- Decided to cap Price and Time to avoid outliers on the data
+- PriceNorm: clamps price between €1,000–€10,000/m² and scales to 0–1  
+- TimeNorm: caps transit time at 120 minutes and scales to 0–1  
+- ValueScore_Weighted = 0.5 × PriceNorm + 0.5 × TimeNorm**  
+- I filtered to towns ≤ 60 min by public transport, then sorted by ValueScore ascending and took the Top 10.
+
+<details>
+<summary> Show DAX (Power BI) Code </summary>
+
+```DAX
+ValueScore_Weighted =
+0.5 * [PriceNorm] + 0.5 * [TimeNorm]   
+
+PriceNorm =
+VAR p = AVERAGE('housing_with_citycenter_times_final1'[price_per_m2])
+VAR p_capped =
+    MAX(1000, MIN(p, 10000))           -- clamp between 1k and 10k €/m²
+RETURN DIVIDE(p_capped - 1000, 10000 - 1000)
+
+TimeNorm =
+VAR t = AVERAGE('housing_with_citycenter_times_final1'[Time To City Center by Transportation])
+VAR t_capped =
+    MIN(t, 120)                        -- cap at 120 minutes
+RETURN DIVIDE(t_capped - 0, 120 - 0)
+```
+</details>
 
 ![Accessibility vs Price Analysis Page](images/accessibility_price.png)
+
+**Key Insights**
+- Towns with faster public transport access are generally more expensive per m².
+- A clear negative correlation exists: price decreases as travel time increases.
+- Some towns within 40–60 minutes offer much lower prices while staying well connected.
+- The Top 10 best-value towns show competitive prices (~€1.5K–€3K/m²) and travel times under 60 minutes.
 
 ---
 
@@ -1158,7 +1216,7 @@ This dashboard helps compare affordability vs connectivity and discover which to
 
 ---
 
-📁 **Power BI File:** `powerbi_dashboard.pbix`
+
 
 
 
