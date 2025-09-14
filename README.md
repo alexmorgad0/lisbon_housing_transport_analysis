@@ -1096,5 +1096,69 @@ Instead of running code notebooks, this app lets users:
 
 This makes it easy to explore the model’s output without needing any coding experience.
 
-🔗 **App Repository:** [link-to-streamlit-repo](https://github.com/alexmorgad0/housing-price-app)
+ **App Repository:** [link-to-streamlit-repo](https://github.com/alexmorgad0/housing-price-app)
+
+![Housing Price Predictor App](images/housing_price_predictor.png)
+
+## 4. Visualization - Power BI Dashboard
+
+To make the analysis easy to explore, I built an interactive dashboard in Power BI.
+
+The dashboard lets users visually explore:
+
+-  Housing prices per m² across the Lisbon & Setúbal area  
+-  Travel time accessibility to the city center (Marquês de Pombal)  
+-  Market structure by property types and distance from the city  
+-  Affordability vs accessibility patterns  
+
+This dashboard helps compare affordability vs connectivity and discover which towns offer better value for commuters.
+
+---
+
+### Dashboard Pages
+
+#### Overview
+- Summary of all listings  
+- Average price per m², average travel times (car vs public transport), average distance to city center  
+- Bubble map of all towns  
+- Scatter plot: price vs distance  
+
+![Overview Page](images/overview.png)
+
+---
+
+#### **Market Structure**
+- Property type distribution (apartments, houses, land)  
+- Average property sizes by distance  
+- Price per m² by type across distance bands  
+- Share of listings per distance band
+
+![Market Structure Page](images/market_structure.png)
+
+---
+
+#### **Accessibility vs Price Analysis**
+- Price vs travel time by public transport  
+- Combined view of price and travel time by distance bands  
+- Top 10 best-value towns (≤60 min to center)
+
+![Accessibility vs Price Analysis Page](images/accessibility_price.png)
+
+---
+
+#### **Town Explorer**
+- Choose any town to see:
+  - Avg price per m²  
+  - Travel time (car vs public transport)  
+  - Distance to city center  
+  - Price difference vs similar-distance towns  
+- Example public transport route to city center
+
+![Town Explorer Page](images/town_explorer.png)
+
+---
+
+📁 **Power BI File:** `powerbi_dashboard.pbix`
+
+
 
