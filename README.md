@@ -1111,7 +1111,7 @@ The dashboard lets users visually explore:
 
 This dashboard helps compare affordability vs connectivity and discover which towns offer better value for commuters.
 
-If you want to know more here is the link for the dasboard. [Download Power BI Dashboard (.pbix)](housing_project_final.pbix) . Click on View Raw for download.
+If you want to know more here is the link for the dasboard. [Download Power BI Dashboard (.pbix)](https://github.com/alexmorgad0/lisbon_housing_transport_analysis/raw/main/housing_project_final.pbix) .
 
 ---
 
