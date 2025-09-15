@@ -5,7 +5,7 @@ It aims to understand whether people could live further from the city center in 
 
 I used a [Kaggle](https://www.kaggle.com/datasets/luvathoms/portugal-real-estate-2024/data) dataset of 40k+ property listings and enriched it with 200 additional live listings from the [Idealista](https://www.idealista.pt) API.  
 
-Transportation data came from multiple [GTFS](https://gtfs.org) feeds covering trains, metro, ferries, trams, and buses — which together contained **over 2 million rows of raw timetable data** that I cleaned, standardized, and merged into a unified transport network.  
+Transportation data came from multiple [GTFS](https://gtfs.org) feeds covering trains, metro, ferries, trams, and buses - which together contained **over 2 million rows of raw timetable data** that I cleaned, standardized, and merged into a unified transport network.  
 
 Because some feeds were missing (notably from [Carris](https://www.carris.pt)), I also used the [Google Maps](https://developers.google.com/maps) API to estimate travel times for the remaining towns.
 
@@ -24,14 +24,14 @@ This project includes:
 #  Tools I Used
 
 - **Python** ([Google Colab](https://colab.research.google.com))
-  - `pandas`, `numpy` — data manipulation  
-  - `matplotlib` — visualizations
-  - `geopy` — get town coordinates
-  - `googlemaps` — route requests
-  - `scikit-learn` —  Linear Regression and Random Forest model for housing price prediction  
-  - `requests` — make API calls ([Google](https://developers.google.com/maps), [Idealista](https://www.idealista.pt))
-- **Power BI** — Dashboards for price vs accessibility analysis
-- **[Streamlit](https://streamlit.io)** — Interactive web app to explore my Prediction Model
+  - `pandas`, `numpy` - data manipulation  
+  - `matplotlib` - visualizations
+  - `geopy` - get town coordinates
+  - `googlemaps` - route requests
+  - `scikit-learn` -  Linear Regression and Random Forest model for housing price prediction  
+  - `requests` - make API calls ([Google](https://developers.google.com/maps), [Idealista](https://www.idealista.pt))
+- **Power BI** - Dashboards for price vs accessibility analysis
+- **[Streamlit](https://streamlit.io)** - Interactive web app to explore my Prediction Model
 - **[GitHub](https://github.com)**  
 
 ---
@@ -933,7 +933,7 @@ To estimate property prices, I trained a supervised regression model using the h
 I first tested a simple Linear Regression, but its performance was very poor (R² ≈ 0.17, RMSE ≈ €2,328/m²).  
 
 I then trained a Random Forest Regressor, which performed much better, explaining about 75% of the variance (R² ≈ 0.75) with an error of €1,300/m².  
-This error is still large and only suitable for showing broad trends — not individual property valuations.
+This error is still large and only suitable for showing broad trends, not individual property valuations.
 
 > Disclaimer: 
 > This model should **not be used to predict real house prices**.  
@@ -943,7 +943,7 @@ This error is still large and only suitable for showing broad trends — not ind
 
 ---
 
-##  Attempt 1 — Linear Regression 
+##  Attempt 1 - Linear Regression 
 R² ≈ 0.17 , RMSE ≈ €2,328/m²
 
 <details>
@@ -1134,7 +1134,7 @@ If you want to know more here is the link for the dasboard. [Download Power BI D
 
 **Key Insights**
 - Housing prices drop noticeably as distance from the city center increases.
-- Several outliers exist — towns far from the center with unexpectedly high prices.
+- Several outliers exist, towns far from the center with unexpectedly high prices.
 - Average public transport time (~60 min) is more than double the average car time (~27 min).
 - Most listings cluster within 20–40 km of the city center.
 ---
@@ -1219,19 +1219,19 @@ RETURN DIVIDE(t_capped - 0, 120 - 0)
 ##  What I Learned
 Throughout this project, I gained experience combining housing market data with public transportation accessibility to support data-driven urban analysis. Key learnings included:
 
-- **Geospatial data handling** — Geocoding hundreds of towns, merging coordinates, and aligning them with transport and price data.
-- **APIs & automation** — Using multiple APIs (Idealista, Google Maps, Nominatim) and implementing caching to avoid rate limits.
-- **GTFS route modeling** — Building a custom routing engine using GTFS timetables and spatial nearest-stop matching.
-- **Machine learning workflow** — Training and evaluating a Random Forest model to estimate price per m², including preprocessing pipelines.
-- **Visualization & storytelling** — Creating clear, interactive dashboards in Power BI and a prediction app in Streamlit.
+- **Geospatial data handling** - Geocoding hundreds of towns, merging coordinates, and aligning them with transport and price data.
+- **APIs & automation** - Using multiple APIs (Idealista, Google Maps, Nominatim) and implementing caching to avoid rate limits.
+- **GTFS route modeling** - Building a custom routing engine using GTFS timetables and spatial nearest-stop matching.
+- **Machine learning workflow** - Training and evaluating a Random Forest model to estimate price per m², including preprocessing pipelines.
+- **Visualization & storytelling** - Creating clear, interactive dashboards in Power BI and a prediction app in Streamlit.
 
 ---
 
 ##  Challenges I Faced
-- **Data availability gaps** — Public GTFS data was incomplete, even tough I had 7 different transportation methods, forcing me to limit my route model to only 3 towns.
-- **Data noise and outliers** — Property data contained many inconsistencies that heavily affected model accuracy.
-- **Complex pipeline** — Merging heterogeneous datasets (housing, geospatial, and transport) required constant cleaning and schema alignment.
-- **Performance tuning** — Finding the right features and model parameters took multiple iterations to avoid underfitting or overfitting.
+- **Data availability gaps** - Public GTFS data was incomplete, even tough I had 7 different transportation methods, forcing me to limit my route model to only 3 towns.
+- **Data noise and outliers** - Property data contained many inconsistencies that heavily affected model accuracy.
+- **Complex pipeline** - Merging heterogeneous datasets (housing, geospatial, and transport) required constant cleaning and schema alignment.
+- **Performance tuning** - Finding the right features and model parameters took multiple iterations to avoid underfitting or overfitting.
 
 ---
 
@@ -1248,7 +1248,7 @@ Throughout this project, I gained experience combining housing market data with 
 ## Conclusion
 This project shows that combining housing and transport data can reveal areas that are both more affordable and reasonably well connected to Lisbon’s city center.
 
-It demonstrates the full data pipeline — from **data collection and cleaning, to geocoding, GTFS route modeling, machine learning, and visualization** — and provides a clear framework to build on.
+It demonstrates the full data pipeline, from **data collection and cleaning, to geocoding, GTFS route modeling, machine learning, and visualization**  and provides a clear framework to build on.
 
 In the future, with more complete and accurate datasets, this work could help answer a key question:  
 > **Does Lisbon have a housing problem or a transportation problem?**  
