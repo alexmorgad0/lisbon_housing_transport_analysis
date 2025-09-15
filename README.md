@@ -7,7 +7,7 @@ I used a [Kaggle](https://www.kaggle.com/datasets/luvathoms/portugal-real-estate
 
 Transportation data came from multiple [GTFS](https://gtfs.org) feeds covering trains, metro, ferries, trams, and buses - which together contained **over 2 million rows of raw timetable data** that I cleaned, standardized, and merged into a unified transport network.  
 
-Because some feeds were missing (notably from [Carris](https://www.carris.pt)), I also used the [Google Maps](https://developers.google.com/maps) API to estimate travel times for the remaining towns.
+Because some feeds were missing (notably from [Carris](https://www.carris.pt)), I also used the [Google Maps](https://developers.google.com/maps) API to estimate travel times.
 
 This project includes:
 -  A custom GTFS-based routing model to simulate public transport commutes  
